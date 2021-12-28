@@ -1,0 +1,183 @@
+<style>
+  #shopify-section-video-gallery .data-set {
+    display: none;
+  }
+  #shopify-section-video-gallery .data-set.active {
+    display: block;
+  }
+</style>
+
+{%- assign BlockSize = section.blocks.size -%}
+{% assign DataSetValue = 0 %}
+{% assign Validation = 1 %}
+
+<div class="container page">
+  {% if section.settings.title != blank %}
+    <h1>{{section.settings.title}}</h1>
+    <div class="feature_divider"></div>
+  {% endif %}
+  {% if section.blocks.size > 0 %}
+    {% for block in section.blocks %}
+      {% assign DataSetValue = forloop.index | divided_by: 9 | ceil | plus: 1 %}
+      {% assign Validation = forloop.index | plus: 1 | divided_by: 9 | floor  %}
+  
+      {% capture MainDiv %}
+  		{{ MainDiv | replace:'#DataSetValue' , DataSetValue  }}
+  	  {% cycle '<div class="data-set" data-set-value="#DataSetValue">', '', '', '', '', '', '', '', '' %}
+      {% if block.settings.video %}
+        <div class="one-third column thumbnail">
+          <div class="video-container">
+            {% capture VideoIDs %}{{ VideoIDs }}{{block.settings.video.id }}{% unless forloop.last %}, {% endunless %}{% endcapture %}
+          </div>
+          {% if block.settings.title != blank %}
+            <div class="caption"><h6>{{block.settings.title}}</h6></div>
+            {% endif %} 
+        </div>
+      {% endif %}
+      {% cycle '', '', '', '', '', '', '', '', '</div>' %}
+  	  {% if forloop.last and forloop.index != 9 and forloop.index != 18 and forloop.index != 27 and forloop.index != 36 %}</div>{% endif %}
+      {% endcapture %}
+
+      {% if DataSetValue == Validation %}
+  	  	{% capture PaginateDiv %}{{ PaginateDiv }}<span class="page"><a href="{{ request.path }}#page={{ DataSetValue }}" title="{{ DataSetValue }}" data-paginate-button="{{ DataSetValue }}">{{ DataSetValue }}</a></span>{% endcapture %}
+  	  {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  {{ MainDiv }}
+  <div class="hidden" data-set-video-id style="display: none;">{{ VideoIDs }}</div>
+  <div class="sixteen columns">
+    <div class="section clearfix">
+      <div class="paginate">
+        {{ PaginateDiv }}
+      </div>
+    </div>
+  </div> 
+  
+  <div class="sixteen columns feature_divider"></div>
+  {% if section.settings.display_social_buttons %}
+    <div class="blog_share meta">
+      {% include "social-buttons" with "page" %}
+    </div>
+  {% endif %}
+</div>
+
+{% schema %}
+  {
+    "name": "Video Gallery",
+    "settings": [
+	{
+        "type": "text",
+        "id": "title",
+        "label": "Heading",
+        "default": "Video Gallery"
+    },
+	{
+      "type": "checkbox",
+      "id": "display_social_buttons",
+      "label": "Show social media share icons",
+      "default": true
+    }
+	],
+	"blocks": [
+	  {
+        "type": "video",
+        "name": "Video",
+        "settings": [
+          {
+            "type": "video_url",
+            "id": "video",
+            "label": "YouTube or Vimeo video URL",
+            "accept": ["youtube", "vimeo"],
+            "default": "https://www.youtube.com/watch?v=_9VUPq3SxOc"
+          },
+		  {
+            "type": "text",
+            "id": "title",
+            "label": "Title"
+          }
+        ]
+      }
+    ]
+  }
+{% endschema %}
+
+<script>
+window.addEventListener('DOMContentLoaded', function() {  
+  function Iframe(Src, Target){
+    let TempSrc = 'https://www.youtube.com/embed/' + Src
+    let iframe = document.createElement('iframe');
+    iframe.src = TempSrc;
+    iframe.setAttribute("class","lazyload");
+    iframe.loading = 'lazy';
+    iframe.setAttribute("allowfullscreen","");
+    iframe.setAttribute("width","auto");
+    iframe.setAttribute("height","180");
+    iframe.setAttribute("frameborder","0");
+    Target.appendChild(iframe);
+  }
+  
+ var MainVideoArry = [];
+	 MainVideoArry = document.querySelector('[data-set-video-id]').innerHTML.split(', ');
+ var MainVideoArryLength = MainVideoArry.length;
+  
+ var RangeStart = 0;
+ var RangeEnd = 8;
+ var AssignSet = 0;
+ var TotalPrint = 9;
+ 
+ var Paginate = document.querySelector('.paginate').children;
+ var MainDiv = document.querySelectorAll('.data-set');
+     MainDiv[0].classList.add("active");
+  	 Paginate[0].children[0].classList.add("current");
+  
+  
+  if(MainDiv.length>Paginate.length){
+    let Lastnumber = MainDiv.length;
+    let Span = document.createElement("span")
+    	Span.className = "page";
+    let URL = '{{ request.path }}#page=' + MainDiv.length;
+    let CreateA = document.createElement("a")
+    	CreateA.setAttribute("href", URL);
+        CreateA.setAttribute("title", Lastnumber);
+        CreateA.setAttribute("data-paginate-button", Lastnumber);
+    	CreateA.innerText = Lastnumber;
+        Span.append(CreateA);
+    document.querySelector('.paginate').append(Span);
+
+  }  
+  for (let i = 0; i < Paginate.length; i++) {
+    let Button = Paginate[i].children[0];
+    Button.addEventListener('click', function(event){
+      event.preventDefault();
+      AssignSet = i;
+      RangeStart = i * 9;
+      RangeEnd = RangeStart + 8;
+      for (let j = 0; j < MainDiv.length; j++) {
+        if(i == j){
+          MainDiv[i].classList.add("active");
+          Paginate[i].children[0].classList.add("current");
+        }
+        else {
+          MainDiv[j].classList.remove("active");
+          Paginate[j].children[0].classList.remove("current");
+        }
+      }
+      if(RangeStart != 0 && TotalPrint <= MainVideoArryLength){
+        let n = 0;
+        for (let m = RangeStart; m < MainVideoArryLength && m <= RangeEnd; m++){
+          Iframe(MainVideoArry[m],MainDiv[AssignSet].children[n].children[0]);
+          n = n + 1;
+        }
+        TotalPrint = TotalPrint + n;
+      }
+    });
+  }
+  let n = 0;
+  for (let m = RangeStart; m < MainVideoArry.length && m <= RangeEnd; m++){
+    Iframe(MainVideoArry[m],MainDiv[AssignSet].children[n].children[0]);
+    n = n + 1;
+  }
+  
+});
+</script>
